@@ -1,0 +1,59 @@
+[tool.poetry]
+name = "vit-masked-face-net"
+version = "1.0.0"
+description = "Vision Transformers for Masked Face Net"
+authors = ["Hensel Jahja <henseljahja@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.11"
+torch = "^1.10.0"
+torchvision = "^0.11.1"
+tqdm = "^4.62.3"
+opencv-python = "^4.5.4"
+black = {extras = ["jupyter"], version = "^21.12b0"}
+mypy = "^0.910"
+isort = "^5.10.1"
+pre-commit = "^2.16.0"
+seaborn = "^0.11.2"
+matplotlib = "^3.5.0"
+jupyterlab = "^3.2.5"
+pandas = "^1.3.4"
+split-folders = "^0.4.3"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+line_length = 88
+profile = "black"
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+exclude = '''
+
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+  | foo.py           # also separately exclude a file named foo.py in
+                     # the root of the project
+)
+'''
