@@ -4,7 +4,7 @@ import math
 import os
 import random
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from os.path import join as pjoin
 from typing import Any, Tuple
@@ -14,10 +14,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytz
+import seaborn as sns
 import torch
-import torch.distributed as dist
 import torch.nn as nn
-from matplotlib.ticker import AutoMinorLocator
 from PIL import Image
 from scipy import ndimage
 from torch import nn
@@ -33,150 +32,170 @@ from tqdm import tqdm
 indonesia_timezone = pytz.timezone("Asia/Jakarta")
 now = datetime.now(indonesia_timezone)
 dt_string = now.strftime("%d_%m_%Y_%H_%M_%S")
-RESULTS_DIR = f"/home/hensel/output_v10/output_v10_{dt_string}"
-os.makedirs(RESULTS_DIR, exist_ok=True)
-test_dir: str = "/home/hensel/results"
-
+logger = logging.getLogger(__name__)
 # %%
+
+
+class Base(object):
+    def __post_init__(self):
+        pass
+
+
 @dataclass
-class DataloaderBaseConfig:
+class DataloaderBaseConfig(Base):
     seed: int = 42
     batch_size: int = 16
-    train_batch_size: int = 16
-    test_batch_size: int = 16
-    eval_batch_size: int = 16
     num_workers: int = 4
     pin_memory: bool = True
-    # train_dir: str = "./data_split/val/"
-    # val_dir: str = "./data_split/val/"
-    # test_dir: str = "./data_split/test/"
-    # train_dir: str = "/home/hensel/data/train/"
-    # val_dir: str = "/home/hensel/data/val/"
-    # test_dir: str = "/home/hensel/data/test/"
-    # train_dir: str = "/home/hensel/test_data/train/"
-    # val_dir: str = "/home/hensel/test_data/val/"
-    # test_dir: str = "/home/hensel/test_data/test/"
-    # train_dir: str = "/home/hensel/data_224/train/"
-    # val_dir: str = "/home/hensel/data_224/val/"
-    # test_dir: str = "/home/hensel/data_224/test/"
-    plots_dir: str = f"{RESULTS_DIR}/plots/"
-    results_dir: str = f"{RESULTS_DIR}/results/"
-    models_dir: str = f"{RESULTS_DIR}/models"
-    attentions_dir: str = f"{RESULTS_DIR}/attentions/"
-    model_test_dir: str = f"{test_dir}/models/"
-    plot_test_dir: str = f"{test_dir}/test/plots"
-    results_test_dir: str = f"{test_dir}/test/results"
+    data_dir: str = "/home/hensel/data"
+    weights_dir: str = "/home/hensel/weights"
+    results_dir: str = "/home/hensel/v2/results"
+    models_dir: str = field(init=False)
+    train_dir: str = field(init=False)
+    test_dir: str = field(init=False)
+    cm_csv_dir: str = field(init=False)
+    cm_acc_csv_dir: str = field(init=False)
+    attentions_plots_dir: str = field(init=False)
+    cm_plots_dir: str = field(init=False)
+    cm_acc_plots_dir: str = field(init=False)
+    accuracy_plots_dir: str = field(init=False)
+    loss_plots_dir: str = field(init=False)
+    train = False
+    test = True
+    eval = False
     transforms: Any = transforms.ToTensor()
 
     def __post_init__(self):
-        os.makedirs(self.plots_dir, exist_ok=True)
-        os.makedirs(self.results_dir, exist_ok=True)
+        super().__post_init__()
+        self.models_dir: str = "/home/hensel/results/models"
+        self.train_dir: str = pjoin(self.results_dir, "csv/train")
+        self.test_dir: str = pjoin(self.results_dir, "csv/test")
+        self.cm_csv_dir: str = pjoin(self.results_dir, "csv/confusion_matrix")
+        self.cm_acc_csv_dir: str = pjoin(self.results_dir, "csv/confusion_matrix_acc")
+        self.attentions_plots_dir: str = pjoin(self.results_dir, "plots/attentions")
+        self.cm_plots_dir: str = pjoin(self.results_dir, "plots/confusion_matrix")
+        self.cm_acc_plots_dir: str = pjoin(
+            self.results_dir, "plots/confusion_matrix_acc"
+        )
+        self.accuracy_plots_dir: str = pjoin(self.results_dir, "plots/training")
+        self.loss_plots_dir: str = pjoin(self.results_dir, "plots/loss")
         os.makedirs(self.models_dir, exist_ok=True)
-        os.makedirs(self.attentions_dir, exist_ok=True)
-        os.makedirs(self.model_test_dir, exist_ok=True)
-        os.makedirs(self.plot_test_dir, exist_ok=True)
-        os.makedirs(self.results_test_dir, exist_ok=True)
-
-
-#     output_dir: str = "./"
+        os.makedirs(self.train_dir, exist_ok=True)
+        os.makedirs(self.test_dir, exist_ok=True)
+        os.makedirs(self.cm_csv_dir, exist_ok=True)
+        os.makedirs(self.cm_acc_csv_dir, exist_ok=True)
+        os.makedirs(self.attentions_plots_dir, exist_ok=True)
+        os.makedirs(self.cm_plots_dir, exist_ok=True)
+        os.makedirs(self.cm_acc_plots_dir, exist_ok=True)
+        os.makedirs(self.accuracy_plots_dir, exist_ok=True)
+        os.makedirs(self.loss_plots_dir, exist_ok=True)
 
 
 @dataclass
 class DataloaderAug(DataloaderBaseConfig):
-    train_dir: str = "/home/hensel/mfn/mfn_224_augment_split_mini/train/"
-    val_dir: str = "/home/hensel/mfn/mfn_224_augment_split_mini/val/"
-    test_dir: str = "/home/hensel/mfn/mfn_224_augment_split_mini/test/"
-    # transforms: Any = transforms.Compose(
-    #     [
-    #         transforms.Resize((224, 224)),
-    #         #             transforms.RandomPerspective(distortion_scale=0.6, p=1.0),
-    #         transforms.GaussianBlur(kernel_size=51),
-    #         transforms.RandomVerticalFlip(p=0.5),
-    #         transforms.ColorJitter(brightness=0.5, hue=0.3),
-    #         transforms.ToTensor(),
-    #         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
-    #     ]
-    # )
+    train_dir: str = field(init=False)
+    val_dir: str = field(init=False)
+    test_dir: str = field(init=False)
+    transforms: Any = transforms.Compose(
+        [
+            transforms.Resize((224, 224)),
+            transforms.RandAugment(),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+        ]
+    )
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.train_dir = pjoin(self.data_dir, "mfn_224_augment_split_mini/train")
+        self.val_dir = pjoin(self.data_dir, "mfn_224_augment_split_mini/val")
+        self.test_dir = pjoin(self.data_dir, "mfn_224_augment_split_mini/test")
 
 
 @dataclass
 class DataloaderNonAug(DataloaderBaseConfig):
-    train_dir: str = "/home/hensel/mfn/mfn_224_split_mini/train/"
-    val_dir: str = "/home/hensel/mfn/mfn_224_split_mini/val/"
-    test_dir: str = "/home/hensel/mfn/mfn_224_split_mini/test/"
-    # transforms: Any = transforms.Compose(
-    #     [
-    #         transforms.Resize((224, 224)),
-    #         transforms.ToTensor(),
-    #         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
-    #     ]
-    # )
+    train_dir: str = field(init=False)
+    val_dir: str = field(init=False)
+    test_dir: str = field(init=False)
+    transforms: Any = transforms.Compose(
+        [
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+        ]
+    )
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.train_dir = pjoin(self.data_dir, "mfn_224_split_mini/train")
+        self.val_dir = pjoin(self.data_dir, "mfn_224_split_mini/val")
+        self.test_dir = pjoin(self.data_dir, "mfn_224_split_mini/test")
 
 
 @dataclass
-class VitBaseConfig:
-    #     patches:int = 16
+class VitBaseConfig(Base):
     attention_dropout_rate: float = 0.0
     dropout_rate: float = 0.1
-    classifier: str = "token"
-    representasion_size: Any = None
     activation: Any = torch.nn.functional.gelu
     img_size: int = 224
     in_channels: int = 3
-    vis: bool = True
     num_classes: int = 4
-    # num_classes: int = 30
-    zero_head: bool = True
-    dataset: str = "MaskedFaceNet"
-    # eval_every: int = 6
     learning_rate: float = 3e-2
     weight_decay: int = 0
     momentum: float = 0.9
     num_steps: int = 500
-    decay_type: str = "cosine"
     warmup_steps: int = 100
     max_grad_norm: float = 1.0
-    local_rank: int = -1
     seed: int = 42
     gradient_accumulation_steps: int = 1
-    fp16: int = 0
-    fp16_opt_level: str = "O2"
-    loss_scale: int = 0
     num_epochs: int = 20
     early_stop_threshold: int = 0.001
     early_stop_patience: int = 3
-    # early_stop_improvement_threshold: int = 0.05
-    # early_stop_divergence_threshold: int = 0.1
+
+    def __post_init__(self):
+        super().__post_init__()
 
 
 @dataclass
 class VitBase(VitBaseConfig):
-    pretrained_dir: str = "/home/hensel/weights/ViT-B_16.npz"
+    pretrained_dir: str = field(init=False)
     patches: int = (16, 16)
     layers: int = 12
     hidden_size: int = 768
     mlp_size: int = 3072
     heads: int = 12
 
+    def __post_init__(self):
+        super().__post_init__()
+        self.pretrained_dir = pjoin(self.weights_dir, "ViT-B_16.npz")
+
 
 @dataclass
 class VitLarge(VitBaseConfig):
-    pretrained_dir: str = "/home/hensel/weights/ViT-L_16.npz"
+    pretrained_dir: str = field(init=False)
     patches: int = (16, 16)
     layers: int = 24
     hidden_size: int = 1024
     mlp_size: int = 4096
     heads: int = 16
 
+    def __post_init__(self):
+        super().__post_init__()
+        self.pretrained_dir = pjoin(self.weights_dir, "ViT-L_16.npz")
+
 
 @dataclass
 class VitHuge(VitBaseConfig):
-    pretrained_dir: str = "/home/hensel/weights/ViT-H_14.npz"
+    pretrained_dir: str = field(init=False)
     patches = (14, 14)
     layers = 32
     hidden_size = 1280
     mlp_size = 5120
     heads = 16
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.pretrained_dir = pjoin(self.weights_dir, "ViT-H_14.npz")
 
 
 """ ViT Base"""
@@ -328,26 +347,6 @@ class Resnet50Pretrained(ResnetBaseConfig, DataloaderNonAug):
     pretrained = True
 
 
-# %% [markdown]
-# ## Resnet
-
-
-# %%
-# from .modeling_resnet import ResNetV2
-
-logger = logging.getLogger(__name__)
-
-
-ATTENTION_Q = "MultiHeadDotProductAttention_1/query"
-ATTENTION_K = "MultiHeadDotProductAttention_1/key"
-ATTENTION_V = "MultiHeadDotProductAttention_1/value"
-ATTENTION_OUT = "MultiHeadDotProductAttention_1/out"
-FC_0 = "MlpBlock_3/Dense_0"
-FC_1 = "MlpBlock_3/Dense_1"
-ATTENTION_NORM = "LayerNorm_0"
-MLP_NORM = "LayerNorm_2"
-
-
 def np2th(weights):
     return torch.from_numpy(weights)
 
@@ -355,7 +354,6 @@ def np2th(weights):
 class Attention(nn.Module):
     def __init__(self, config):
         super(Attention, self).__init__()
-        self.vis = config.vis
         self.num_attention_heads = config.heads
         self.attention_head_size = int(config.hidden_size / self.num_attention_heads)
         self.all_head_size = self.num_attention_heads * self.attention_head_size
@@ -390,7 +388,7 @@ class Attention(nn.Module):
         attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
         attention_scores = attention_scores / math.sqrt(self.attention_head_size)
         attention_probs = self.softmax(attention_scores)
-        weights = attention_probs if self.vis else None
+        weights = attention_probs
         attention_probs = self.attn_dropout(attention_probs)
 
         context_layer = torch.matmul(attention_probs, value_layer)
@@ -428,8 +426,6 @@ class Mlp(nn.Module):
 
 
 class Embeddings(nn.Module):
-    """Construct the embeddings from patch, position embeddings."""
-
     def __init__(self, config):
         super(Embeddings, self).__init__()
         self.hybrid = None
@@ -487,33 +483,96 @@ class Block(nn.Module):
         return x, weights
 
     def load_from(self, weights, n_block):
-        ROOT = f"Transformer/encoderblock_{n_block}"
         with torch.no_grad():
             query_weight = (
-                np2th(weights[pjoin(ROOT, ATTENTION_Q, "kernel")])
+                np2th(
+                    weights[
+                        pjoin(
+                            "Transformer/encoderblock_" + n_block,
+                            "MultiHeadDotProductAttention_1/query",
+                            "kernel",
+                        )
+                    ]
+                )
                 .view(self.hidden_size, self.hidden_size)
                 .t()
             )
             key_weight = (
-                np2th(weights[pjoin(ROOT, ATTENTION_K, "kernel")])
+                np2th(
+                    weights[
+                        pjoin(
+                            "Transformer/encoderblock_" + n_block,
+                            "MultiHeadDotProductAttention_1/key",
+                            "kernel",
+                        )
+                    ]
+                )
                 .view(self.hidden_size, self.hidden_size)
                 .t()
             )
             value_weight = (
-                np2th(weights[pjoin(ROOT, ATTENTION_V, "kernel")])
+                np2th(
+                    weights[
+                        pjoin(
+                            "Transformer/encoderblock_" + n_block,
+                            "MultiHeadDotProductAttention_1/value",
+                            "kernel",
+                        )
+                    ]
+                )
                 .view(self.hidden_size, self.hidden_size)
                 .t()
             )
             out_weight = (
-                np2th(weights[pjoin(ROOT, ATTENTION_OUT, "kernel")])
+                np2th(
+                    weights[
+                        pjoin(
+                            "Transformer/encoderblock_" + n_block,
+                            "MultiHeadDotProductAttention_1/out",
+                            "kernel",
+                        )
+                    ]
+                )
                 .view(self.hidden_size, self.hidden_size)
                 .t()
             )
 
-            query_bias = np2th(weights[pjoin(ROOT, ATTENTION_Q, "bias")]).view(-1)
-            key_bias = np2th(weights[pjoin(ROOT, ATTENTION_K, "bias")]).view(-1)
-            value_bias = np2th(weights[pjoin(ROOT, ATTENTION_V, "bias")]).view(-1)
-            out_bias = np2th(weights[pjoin(ROOT, ATTENTION_OUT, "bias")]).view(-1)
+            query_bias = np2th(
+                weights[
+                    pjoin(
+                        "Transformer/encoderblock_" + n_block,
+                        "MultiHeadDotProductAttention_1/query",
+                        "bias",
+                    )
+                ]
+            ).view(-1)
+            key_bias = np2th(
+                weights[
+                    pjoin(
+                        "Transformer/encoderblock_" + n_block,
+                        "MultiHeadDotProductAttention_1/key",
+                        "bias",
+                    )
+                ]
+            ).view(-1)
+            value_bias = np2th(
+                weights[
+                    pjoin(
+                        "Transformer/encoderblock_" + n_block,
+                        "MultiHeadDotProductAttention_1/value",
+                        "bias",
+                    )
+                ]
+            ).view(-1)
+            out_bias = np2th(
+                weights[
+                    pjoin(
+                        "Transformer/encoderblock_" + n_block,
+                        "MultiHeadDotProductAttention_1/out",
+                        "bias",
+                    )
+                ]
+            ).view(-1)
 
             self.attn.query.weight.copy_(query_weight)
             self.attn.key.weight.copy_(key_weight)
@@ -524,10 +583,42 @@ class Block(nn.Module):
             self.attn.value.bias.copy_(value_bias)
             self.attn.out.bias.copy_(out_bias)
 
-            mlp_weight_0 = np2th(weights[pjoin(ROOT, FC_0, "kernel")]).t()
-            mlp_weight_1 = np2th(weights[pjoin(ROOT, FC_1, "kernel")]).t()
-            mlp_bias_0 = np2th(weights[pjoin(ROOT, FC_0, "bias")]).t()
-            mlp_bias_1 = np2th(weights[pjoin(ROOT, FC_1, "bias")]).t()
+            mlp_weight_0 = np2th(
+                weights[
+                    pjoin(
+                        "Transformer/encoderblock_" + n_block,
+                        "MlpBlock_3/Dense_0",
+                        "kernel",
+                    )
+                ]
+            ).t()
+            mlp_weight_1 = np2th(
+                weights[
+                    pjoin(
+                        "Transformer/encoderblock_" + n_block,
+                        "MlpBlock_3/Dense_1",
+                        "kernel",
+                    )
+                ]
+            ).t()
+            mlp_bias_0 = np2th(
+                weights[
+                    pjoin(
+                        "Transformer/encoderblock_" + n_block,
+                        "MlpBlock_3/Dense_0",
+                        "bias",
+                    )
+                ]
+            ).t()
+            mlp_bias_1 = np2th(
+                weights[
+                    pjoin(
+                        "Transformer/encoderblock_" + n_block,
+                        "MlpBlock_3/Dense_1",
+                        "bias",
+                    )
+                ]
+            ).t()
 
             self.ffn.fc1.weight.copy_(mlp_weight_0)
             self.ffn.fc2.weight.copy_(mlp_weight_1)
@@ -535,19 +626,50 @@ class Block(nn.Module):
             self.ffn.fc2.bias.copy_(mlp_bias_1)
 
             self.attention_norm.weight.copy_(
-                np2th(weights[pjoin(ROOT, ATTENTION_NORM, "scale")])
+                np2th(
+                    weights[
+                        pjoin(
+                            "Transformer/encoderblock_" + n_block,
+                            "LayerNorm_0",
+                            "scale",
+                        )
+                    ]
+                )
             )
             self.attention_norm.bias.copy_(
-                np2th(weights[pjoin(ROOT, ATTENTION_NORM, "bias")])
+                np2th(
+                    weights[
+                        pjoin(
+                            "Transformer/encoderblock_" + n_block, "LayerNorm_0", "bias"
+                        )
+                    ]
+                )
             )
-            self.ffn_norm.weight.copy_(np2th(weights[pjoin(ROOT, MLP_NORM, "scale")]))
-            self.ffn_norm.bias.copy_(np2th(weights[pjoin(ROOT, MLP_NORM, "bias")]))
+            self.ffn_norm.weight.copy_(
+                np2th(
+                    weights[
+                        pjoin(
+                            "Transformer/encoderblock_" + n_block,
+                            "LayerNorm_2",
+                            "scale",
+                        )
+                    ]
+                )
+            )
+            self.ffn_norm.bias.copy_(
+                np2th(
+                    weights[
+                        pjoin(
+                            "Transformer/encoderblock_" + n_block, "LayerNorm_2", "bias"
+                        )
+                    ]
+                )
+            )
 
 
 class Encoder(nn.Module):
     def __init__(self, config):
         super(Encoder, self).__init__()
-        self.vis = config.vis
         self.layer = nn.ModuleList()
         self.encoder_norm = LayerNorm(config.hidden_size, eps=1e-6)
         for _ in range(config.layers):
@@ -558,8 +680,7 @@ class Encoder(nn.Module):
         attn_weights = []
         for layer_block in self.layer:
             hidden_states, weights = layer_block(hidden_states)
-            if self.vis:
-                attn_weights.append(weights)
+            attn_weights.append(weights)
         encoded = self.encoder_norm(hidden_states)
         return encoded, attn_weights
 
@@ -580,25 +701,19 @@ class VisionTransformer(nn.Module):
     def __init__(self, config):
         super(VisionTransformer, self).__init__()
         self.num_classes = config.num_classes
-        self.zero_head = config.zero_head
-        self.classifier = config.classifier
 
         self.transformer = Transformer(config)
         self.head = Linear(config.hidden_size, config.num_classes)
 
-    def forward(self, x, labels=None):
+    def forward(self, x):
         x, attn_weights = self.transformer(x)
         logits = self.head(x[:, 0])
         return logits, attn_weights
 
     def load_from(self, weights):
         with torch.no_grad():
-            if self.zero_head:
-                nn.init.zeros_(self.head.weight)
-                nn.init.zeros_(self.head.bias)
-            else:
-                self.head.weight.copy_(np2th(weights["head/kernel"]).t())
-                self.head.bias.copy_(np2th(weights["head/bias"]).t())
+            nn.init.zeros_(self.head.weight)
+            nn.init.zeros_(self.head.bias)
 
             self.transformer.embeddings.patch_embeddings.weight.copy_(
                 np2th(weights["embedding/kernel"].transpose([3, 2, 0, 1]))
@@ -625,11 +740,8 @@ class VisionTransformer(nn.Module):
                 )
                 ntok_new = posemb_new.size(1)
 
-                if self.classifier == "token":
-                    posemb_tok, posemb_grid = posemb[:, :1], posemb[0, 1:]
-                    ntok_new -= 1
-                else:
-                    posemb_tok, posemb_grid = posemb[:, :0], posemb[0]
+                posemb_tok, posemb_grid = posemb[:, :1], posemb[0, 1:]
+                ntok_new -= 1
 
                 gs_old = int(np.sqrt(len(posemb_grid)))
                 gs_new = int(np.sqrt(ntok_new))
@@ -648,7 +760,6 @@ class VisionTransformer(nn.Module):
 
 
 # %%
-# logger = logging.getLogger(__name__)
 
 
 class WarmupCosineSchedule(LambdaLR):
@@ -673,7 +784,6 @@ class WarmupCosineSchedule(LambdaLR):
 
 
 # %%
-# logger = logging.getLogger(__name__)
 
 
 def get_loader(
@@ -714,7 +824,6 @@ def get_loader(
 
 
 # %%
-# logger = logging.getLogger(__name__)
 
 
 class Metrics:
@@ -730,12 +839,6 @@ class Metrics:
             "eval_loss": [],
         }
         self.epoch = 0
-
-        # self.early_stop_counter = 0
-        # self.eval_best_loss = float("inf")
-        # self.early_stop_patience = self.config.early_stop_patience
-        # self.early_stop_threshold: int = self.config.early_stop_threshold
-        # self.early_stop_patience: int = self.config.early_stop_patience
 
     def reset(self):
         self.train_time = 0
@@ -778,9 +881,8 @@ class Metrics:
         return df
 
     def to_csv(self):
-        self.make_dirs()
         df = self.to_pandas()
-        df.to_csv(f"{self.config.results_dir}/{self.config.name}.csv", index=False)
+        df.to_csv(f"{self.config.train_dir}/{self.config.name}.csv", index=False)
 
     def to_plot(self):
         df = self.to_pandas()
@@ -804,12 +906,12 @@ class Metrics:
         ax1.set_title(title + " Accuracy", fontsize=30)
         ax1.set_xlabel("Epoch", fontsize=20)
         ax1.set_ylabel("Accuracy", fontsize=20)
-        ax1.xaxis.set_minor_locator(AutoMinorLocator(4))
-        ax1.yaxis.set_minor_locator(AutoMinorLocator(4))
+        ax1.set_xticks(np.arange(1, 21))
+        ax1.set_yticks(np.arange(0, 1.1, 0.1))
         ax1.grid(which="major", color="#CCCCCC", linestyle="--")
         ax1.grid(which="minor", color="#CCCCCC", linestyle=":")
         ax1.figure.savefig(
-            self.config.plots_dir + "/" + self.config.name + "_accuracy.png"
+            self.config.accuracy_plots_dir + "/" + self.config.name + "_accuracy.png"
         )
 
         ax2 = df[
@@ -830,25 +932,20 @@ class Metrics:
         ax2.set_xlabel("Epoch", fontsize=20)
         ax2.set_ylabel("Loss", fontsize=20)
         ax2.set_title(title + " Loss", fontsize=30)
-        ax2.xaxis.set_minor_locator(AutoMinorLocator(4))
-        ax2.yaxis.set_minor_locator(AutoMinorLocator(4))
+        ax2.set_xticks(np.arange(1, 21))
         ax2.grid(which="major", color="#CCCCCC", linestyle="--")
         ax2.grid(which="minor", color="#CCCCCC", linestyle=":")
-        ax2.figure.savefig(self.config.plots_dir + "/" + self.config.name + "_loss.png")
+        ax2.figure.savefig(
+            self.config.loss_plots_dir + "/" + self.config.name + "_loss.png"
+        )
         plt.close("all")
 
     def get_metrics(self):
         return self.metrics
 
-    def make_dirs(self):
-        os.makedirs(self.config.plots_dir, exist_ok=True)
-        os.makedirs(self.config.results_dir, exist_ok=True)
-        os.makedirs(self.config.models_dir, exist_ok=True)
-
     def early_stop(self, model):
         if self.eval_best_loss - self.eval_loss > self.early_stop_threshold:
             best_model = copy.deepcopy(model)
-            os.makedirs(self.config.models_dir, exist_ok=True)
             model_dir = (
                 f"{self.config.models_dir}/{self.config.name}_Early_Stopped_Model.pt"
             )
@@ -863,26 +960,9 @@ class Metrics:
             self.early_stop_counter += 1
             if self.early_stop_counter >= self.early_stop_patience:
                 return True
-        # eval_loss_diff = self.metrics["eval_loss"][-1] - self.metrics["eval_loss"][-2]
-        # if eval_loss_diff > self.config.early_stop_improvement_threshold:
-        # #     self.early_stop_counter = 0
-        # if (eval_loss_diff > -(self.config.early_stop_threshold)) or abs(eval_loss_diff) < abs(self.config.early_stop_threshold):
-        #     self.early_stop_counter += 1
-        # if abs(eval_loss_diff) < abs(self.early_stop_threshold):
-        #     self.early_stop_counter += 1
-        # if self.eval_loss < self.early_stop_threshold * -1:
-        #     self.early_stop_counter = 0
-        # if eval_loss_diff < -(self.config.early_stop_threshold):
-        #     self.early_stop_counter += 1
-        # if self.eval_loss > self.early_stop_threshold:
-        #     self.early_stop_counter += 1
-        #     if self.early_stop_counter >= self.early_stop_patience:
-        #         return True
-        # if self.metrics["eval_loss"][-1] > self.config.early_stop_divergence_threshold:
-        #     return True
 
 
-def train(config, model):
+def run(config, model):
     train_loader, eval_loader, test_loader = get_loader(config)
 
     optimizer = torch.optim.SGD(
@@ -900,146 +980,132 @@ def train(config, model):
 
     metrics = Metrics(config)
 
-    random.seed(42)
-    np.random.seed(42)
-    torch.manual_seed(42)
+    random.seed(config.seed)
+    np.random.seed(config.seed)
+    torch.manual_seed(config.seed)
 
-    global_step, best_acc = 0.0, 0.0
-    # model, optimizer = amp.initialize(
-    #     models=model, optimizers=optimizer, opt_level=config.fp16_opt_level
-    # )
-    # amp._amp_state.loss_scalers[0]._loss_scale = 2 ** 20
-    # epoch = 0
-    for epoch in range(config.num_epochs):
-        # while True:
-        # epoch += 1
-        model.train()
-        train_iterator = tqdm(
-            train_loader,
-            desc=config.name
-            + " Training Epoch X / X : Batch X / X) (Acc = X, Loss = X)",
-            bar_format="{l_bar}{r_bar}",
-            dynamic_ncols=True,
-        )
-        loss_fct = CrossEntropyLoss()
-
-        train_running_loss = 0.0
-        train_running_corrects = 0.0
-
-        train_epoch_acc = 0.0
-        train_epoch_loss = 0.0
-
-        eval_running_loss = 0.0
-        eval_running_corrects = 0.0
-
-        eval_epoch_loss = 0.0
-        eval_epoch_acc = 0.0
-
-        train_start_time = time.process_time()
-
-        for batch, (inputs, labels) in enumerate(train_iterator):
-
-            inputs = inputs.to(config.device)
-            labels = labels.to(config.device)
-
-            optimizer.zero_grad()
-
-            if "vit" in config.name:
-                logits, attn_weights = model(inputs)
-            else:
-                logits = model(inputs)
-            loss = loss_fct(logits.view(-1, config.num_classes), labels.view(-1))
-
-            _, preds = torch.max(logits, 1)
-            train_running_acc = (preds == labels).sum() / len(labels)
-
-            train_running_loss += loss.item() * inputs.size(0)
-            train_running_corrects += torch.sum(preds == labels.data)
-
-            loss.backward()
-            # with amp.scale_loss(loss, optimizer) as scaled_loss:
-            #     scaled_loss.backward()
-            optimizer.step()
-            scheduler.step()
-
-            torch.nn.utils.clip_grad_norm_(model.parameters(), config.max_grad_norm)
-            # torch.nn.utils.clip_grad_norm_(
-            #     amp.master_params(optimizer), config.max_grad_norm
-            # )
-            global_step += 1
-
-            batch_cnt = batch + 1
-            epoch_cnt = epoch + 1
-
-            train_iterator.set_description(
-                config.name
-                + " Training Epoch %d : Batch %d / %d) (Acc = %2.5f, Loss = %2.5f)"
-                % (
-                    epoch_cnt,
-                    # config.num_epochs,
-                    batch_cnt,
-                    len(train_loader),
-                    train_running_acc.item(),
-                    loss.item(),
-                )
+    best_acc = 0.0
+    if config.train:
+        for epoch in range(config.num_epochs):
+            model.train()
+            train_iterator = tqdm(
+                train_loader,
+                desc=config.name
+                + " Training Epoch X / X : Batch X / X) (Acc = X, Loss = X)",
+                bar_format="{l_bar}{r_bar}",
+                dynamic_ncols=True,
             )
-        train_epoch_loss = train_running_loss / len(train_loader.dataset)
-        train_epoch_acc = (train_running_corrects / len(train_loader.dataset)).item()
+            loss_fct = CrossEntropyLoss()
 
-        train_end_time = time.process_time() - train_start_time
-        metrics.train_update(train_end_time, train_epoch_acc, train_epoch_loss)
-        # print(f"Metrics {metrics.get_metrics()}")
+            train_running_loss = 0.0
+            train_running_corrects = 0.0
 
-        model.eval()
-        eval_iterator = tqdm(
-            eval_loader,
-            desc=config.name + " Eval Epoch X / X : Batch X / X) (Acc = X, Loss = X)",
-            bar_format="{l_bar}{r_bar}",
-            dynamic_ncols=True,
-        )
-        eval_start_time = time.process_time()
-        for batch, (inputs, labels) in enumerate(eval_iterator):
-            inputs = inputs.to(config.device)
-            labels = labels.to(config.device)
+            train_epoch_acc = 0.0
+            train_epoch_loss = 0.0
 
-            with torch.no_grad():
+            eval_running_loss = 0.0
+            eval_running_corrects = 0.0
+
+            eval_epoch_loss = 0.0
+            eval_epoch_acc = 0.0
+
+            train_start_time = time.process_time()
+
+            for batch, (inputs, labels) in enumerate(train_iterator):
+
+                inputs = inputs.to(config.device)
+                labels = labels.to(config.device)
+
+                optimizer.zero_grad()
+
                 if "vit" in config.name:
-                    logits, atttn_weights = model(inputs)
+                    logits, attn_weights = model(inputs)
                 else:
                     logits = model(inputs)
-                loss = loss_fct(logits, labels)
+                loss = loss_fct(logits.view(-1, config.num_classes), labels.view(-1))
+
                 _, preds = torch.max(logits, 1)
+                train_running_acc = (preds == labels).sum() / len(labels)
 
-            eval_running_acc = ((preds == labels).sum() / len(labels)).item()
+                train_running_loss += loss.item() * inputs.size(0)
+                train_running_corrects += torch.sum(preds == labels.data)
 
-            eval_running_loss += loss.item() * inputs.size(0)
-            eval_running_corrects += torch.sum(preds == labels.data)
+                loss.backward()
+                optimizer.step()
+                scheduler.step()
 
-            batch_cnt = batch + 1
-            epoch_cnt = epoch + 1
+                torch.nn.utils.clip_grad_norm_(model.parameters(), config.max_grad_norm)
 
-            eval_iterator.set_description(
-                config.name
-                + " Eval Epoch %d : Batch %d / %d) (Acc = %2.5f, Loss = %2.5f)"
-                % (
-                    epoch_cnt,
-                    # config.num_epochs,
-                    batch_cnt,
-                    len(eval_loader),
-                    eval_running_acc,
-                    loss.item(),
+                batch_cnt = batch + 1
+                epoch_cnt = epoch + 1
+
+                train_iterator.set_description(
+                    config.name
+                    + " Training Epoch %d / %d : Batch %d / %d) (Acc = %2.5f, Loss = %2.5f)"
+                    % (
+                        epoch_cnt,
+                        config.num_epochs,
+                        batch_cnt,
+                        len(train_loader),
+                        train_running_acc.item(),
+                        loss.item(),
+                    )
                 )
+            train_epoch_loss = train_running_loss / len(train_loader.dataset)
+            train_epoch_acc = (
+                train_running_corrects / len(train_loader.dataset)
+            ).item()
+
+            train_end_time = time.process_time() - train_start_time
+            metrics.train_update(train_end_time, train_epoch_acc, train_epoch_loss)
+        if config.eval:
+            model.eval()
+            eval_iterator = tqdm(
+                eval_loader,
+                desc=config.name
+                + " Eval Epoch X / X : Batch X / X) (Acc = X, Loss = X)",
+                bar_format="{l_bar}{r_bar}",
+                dynamic_ncols=True,
             )
+            eval_start_time = time.process_time()
+            for batch, (inputs, labels) in enumerate(eval_iterator):
+                inputs = inputs.to(config.device)
+                labels = labels.to(config.device)
 
-        eval_epoch_loss = eval_running_loss / len(eval_loader.dataset)
-        eval_epoch_acc = (eval_running_corrects / len(eval_loader.dataset)).item()
+                with torch.no_grad():
+                    if "vit" in config.name:
+                        logits, atttn_weights = model(inputs)
+                    else:
+                        logits = model(inputs)
+                    loss = loss_fct(logits, labels)
+                    _, preds = torch.max(logits, 1)
 
-        eval_end_time = time.process_time() - eval_start_time
+                eval_running_acc = ((preds == labels).sum() / len(labels)).item()
+
+                eval_running_loss += loss.item() * inputs.size(0)
+                eval_running_corrects += torch.sum(preds == labels.data)
+
+                batch_cnt = batch + 1
+                epoch_cnt = epoch + 1
+
+                eval_iterator.set_description(
+                    config.name
+                    + " Eval Epoch %d / %d : Batch %d / %d) (Acc = %2.5f, Loss = %2.5f)"
+                    % (
+                        epoch_cnt,
+                        config.num_epochs,
+                        batch_cnt,
+                        len(eval_loader),
+                        eval_running_acc,
+                        loss.item(),
+                    )
+                )
+
+            eval_epoch_loss = eval_running_loss / len(eval_loader.dataset)
+            eval_epoch_acc = (eval_running_corrects / len(eval_loader.dataset)).item()
+            eval_end_time = time.process_time() - eval_start_time
 
         metrics.eval_update(eval_end_time, eval_epoch_acc, eval_epoch_loss)
-
-        # print(f"Metrics {metrics.get_metrics()}")
-
         metrics.to_csv()
         metrics.to_plot()
 
@@ -1047,7 +1113,6 @@ def train(config, model):
 
             best_acc = eval_epoch_acc
             best_model = copy.deepcopy(model)
-            os.makedirs(config.models_dir, exist_ok=True)
             model_dir = f"{config.models_dir}/{config.name}_best_model.pth"
             if os.path.exists(model_dir):
                 os.remove(model_dir)
@@ -1064,9 +1129,13 @@ def train(config, model):
             logger.info(f"Best accuracy at {best_acc}")
             logger.info(f"Saved model to {model_dir}")
 
+    if config.test:
+        test(config, model, test_loader)
 
-def test(config, model):
-    train_loader, eval_loader, test_loader = get_loader(config)
+
+def test(config, model, test_loader):
+
+    classes = test_loader.dataset.classes
 
     metrics = {
         "test_acc": [],
@@ -1080,7 +1149,7 @@ def test(config, model):
         bar_format="{l_bar}{r_bar}",
         dynamic_ncols=True,
     )
-    classes = test_loader.dataset.class_to_idx
+    classes = test_loader.dataset.classes
 
     loss_fct = CrossEntropyLoss()
     test_running_loss = 0.0
@@ -1089,13 +1158,15 @@ def test(config, model):
     test_epoch_loss = 0.0
     test_epoch_acc = 0.0
 
-    checkpoint = torch.load(
-        config.model_test_dir + "/" + config.name + "_best_model.pth"
-    )
+    checkpoint = torch.load(config.models_dir + "/" + config.name + "_best_model.pth")
 
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()
     model.to(config.device)
+
+    nb_classes = len(classes)
+    confusion_matrix = np.zeros((nb_classes, nb_classes))
+
     test_start_time = time.process_time()
     for batch, (inputs, labels) in enumerate(test_iterator):
         inputs = inputs.to(config.device)
@@ -1108,9 +1179,11 @@ def test(config, model):
                 logits = model(inputs)
             loss = loss_fct(logits, labels)
             _, preds = torch.max(logits, 1)
+            for t, p in zip(labels.view(-1), preds.view(-1)):
+                confusion_matrix[t.long(), p.long()] += 1
 
+        batch_cnt = batch + 1
         test_running_acc = ((preds == labels).sum() / len(labels)).item()
-
         test_running_loss += loss.item() * inputs.size(0)
         test_running_corrects += torch.sum(preds == labels.data)
 
@@ -1118,13 +1191,12 @@ def test(config, model):
             config.name
             + " Test Batch %d / %d) (Acc = %2.5f, Loss = %2.5f)"
             % (
-                batch,
+                batch_cnt,
                 len(test_loader),
                 test_running_acc,
                 loss.item(),
             )
         )
-
     test_epoch_loss = test_running_loss / len(test_loader.dataset)
     test_epoch_acc = (test_running_corrects / len(test_loader.dataset)).item()
 
@@ -1135,79 +1207,98 @@ def test(config, model):
     metrics["test_time"].append(test_end_time)
 
     pd.DataFrame(metrics).to_csv(
-        f"{config.results_test_dir}/{config.name}_test.csv", index=False
+        f"{config.test_dir}/{config.name}_test.csv", index=False
     )
-    transform = transforms.Compose(
-        [transforms.Resize((224, 224)), transforms.ToTensor()]
+
+    plt.figure(figsize=(15, 15))
+
+    df_cm = pd.DataFrame(confusion_matrix, index=classes, columns=classes).astype(int)
+
+    df_cm_acc = df_cm.copy(deep=True)
+    for class_name in classes:
+        df_cm_acc[class_name] = df_cm_acc[class_name] / df_cm_acc[class_name].sum()
+
+    df_cm.to_csv(f"{config.cm_csv_dir}/{config.name}_cm.csv", index=False)
+    df_cm_acc.to_csv(f"{config.cm_acc_csv_dir}/{config.name}_cm_acc.csv", index=False)
+
+    heatmap = sns.heatmap(df_cm, annot=True)
+    heatmap.yaxis.set_ticklabels(
+        heatmap.yaxis.get_ticklabels(), rotation=0, ha="right", fontsize=15
     )
-    im = Image.open("/home/hensel/results/Mask_0.png")
-    x = transform(im)
-    model.to(torch.device("cpu"))
-    logits, att_mat = model(x.unsqueeze(0))
-    att_mat = torch.stack(att_mat).squeeze(1)
-    att_mat = torch.mean(att_mat, dim=1)
-    residual_att = torch.eye(att_mat.size(1))
-    aug_att_mat = att_mat + residual_att
-    aug_att_mat = aug_att_mat / aug_att_mat.sum(dim=-1).unsqueeze(-1)
-    joint_attentions = torch.zeros(aug_att_mat.size())
-    joint_attentions[0] = aug_att_mat[0]
+    heatmap.xaxis.set_ticklabels(
+        heatmap.xaxis.get_ticklabels(), rotation=45, ha="right", fontsize=15
+    )
 
-    for n in range(1, aug_att_mat.size(0)):
-        joint_attentions[n] = torch.matmul(aug_att_mat[n], joint_attentions[n - 1])
+    plt.ylabel("True label")
+    plt.xlabel("Predicted label")
+    plt.savefig(config.cm_plots_dir + "/" + config.name + "_confusion_matrix.png")
+    plt.close("all")
 
-    v = joint_attentions[-1]
-    grid_size = int(np.sqrt(aug_att_mat.size(-1)))
-    mask = v[0, 1:].reshape(grid_size, grid_size).detach().numpy()
-    mask = cv2.resize(mask / mask.max(), im.size)[..., np.newaxis]
-    result = (mask * im).astype("uint8")
+    heatmap = sns.heatmap(df_cm_acc, annot=True)
+    heatmap.yaxis.set_ticklabels(
+        heatmap.yaxis.get_ticklabels(), rotation=0, ha="right", fontsize=15
+    )
+    heatmap.xaxis.set_ticklabels(
+        heatmap.xaxis.get_ticklabels(), rotation=45, ha="right", fontsize=15
+    )
 
-    fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(16, 16))
-    ax1.set_title("Original", fontsize=16)
-    ax2.set_title("Attention Map", fontsize=16)
+    plt.ylabel("True label")
+    plt.xlabel("Predicted label")
+    plt.savefig(
+        config.cm_acc_plots_dir + "/" + config.name + "_acc_confusion_matrix.png"
+    )
+    plt.close("all")
 
-    ax1.imshow(im)
-    ax2.imshow(result)
+    if "vit" in config.name:
+        transform = transforms.Compose(
+            [transforms.Resize((224, 224)), transforms.ToTensor()]
+        )
+        rand_class = np.random.choice(classes)
+        list_of_images = os.listdir(pjoin(config.val_dir, rand_class))
+        rand_image = np.random.choice(list_of_images)
 
-    fig.savefig(f"{config.plot_test_dir}/{config.name}_attention_v1.png")
+        im = Image.open(pjoin(pjoin(config.val_dir, rand_class), rand_image))
 
-    plt.close()
+        x = transform(im)
 
-    im = Image.open("/home/hensel/results/Mask_Mouth_Chin_99999.png")
-    x = transform(im)
-    model.to(torch.device("cpu"))
-    logits, att_mat = model(x.unsqueeze(0))
-    att_mat = torch.stack(att_mat).squeeze(1)
-    att_mat = torch.mean(att_mat, dim=1)
-    residual_att = torch.eye(att_mat.size(1))
-    aug_att_mat = att_mat + residual_att
-    aug_att_mat = aug_att_mat / aug_att_mat.sum(dim=-1).unsqueeze(-1)
-    joint_attentions = torch.zeros(aug_att_mat.size())
-    joint_attentions[0] = aug_att_mat[0]
+        model.to(torch.device("cpu"))
+        logits, att_mat = model(x.unsqueeze(0))
 
-    for n in range(1, aug_att_mat.size(0)):
-        joint_attentions[n] = torch.matmul(aug_att_mat[n], joint_attentions[n - 1])
+        att_mat = torch.stack(att_mat).squeeze(1)
+        att_mat = torch.mean(att_mat, dim=1)
 
-    v = joint_attentions[-1]
-    grid_size = int(np.sqrt(aug_att_mat.size(-1)))
-    mask = v[0, 1:].reshape(grid_size, grid_size).detach().numpy()
-    mask = cv2.resize(mask / mask.max(), im.size)[..., np.newaxis]
-    result = (mask * im).astype("uint8")
+        residual_att = torch.eye(att_mat.size(1))
 
-    fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(16, 16))
-    ax1.set_title("Original")
-    ax2.set_title("Attention Map")
+        aug_att_mat = att_mat + residual_att
+        aug_att_mat = aug_att_mat / aug_att_mat.sum(dim=-1).unsqueeze(-1)
 
-    ax1.imshow(im)
-    ax2.imshow(result)
+        joint_attentions = torch.zeros(aug_att_mat.size())
+        joint_attentions[0] = aug_att_mat[0]
 
-    fig.savefig(f"{config.plot_test_dir}/{config.name}_attention_v2.png")
+        for n in range(1, aug_att_mat.size(0)):
+            joint_attentions[n] = torch.matmul(aug_att_mat[n], joint_attentions[n - 1])
 
-    plt.close()
+        v = joint_attentions[-1]
+
+        grid_size = int(np.sqrt(aug_att_mat.size(-1)))
+
+        mask = v[0, 1:].reshape(grid_size, grid_size).detach().numpy()
+        mask = cv2.resize(mask / mask.max(), im.size)[..., np.newaxis]
+
+        result = (mask * im).astype("uint8")
+
+        fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(16, 16))
+        ax1.set_title("Original", fontsize=16)
+        ax2.set_title("Attention Map", fontsize=16)
+
+        ax1.imshow(im)
+        ax2.imshow(result)
+
+        fig.savefig(f"{config.attentions_plots_dir}/{config.name}_attention_v1.png")
+
+        plt.close()
 
 
-random.seed(42)
-np.random.seed(42)
-torch.manual_seed(42)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -1231,8 +1322,8 @@ def vit_base_aug_pretrained():
         model = freeze_layers(model)
     model.to(config.device)
     logger.info(f"Starting Training {config.name}")
-    # train(config, model)
-    test(config, model)
+    run(config, model)
+
     torch.cuda.empty_cache()
 
 
@@ -1245,8 +1336,8 @@ def vit_large_aug_pretrained():
         model = freeze_layers(model)
     model.to(config.device)
     logger.info(f"Starting Training {config.name}")
-    # train(config, model)
-    test(config, model)
+    run(config, model)
+
     torch.cuda.empty_cache()
 
 
@@ -1259,8 +1350,8 @@ def vit_huge_aug_pretrained():
         model = freeze_layers(model)
     model.to(config.device)
     logger.info(f"Starting Training {config.name}")
-    # train(config, model)
-    test(config, model)
+    run(config, model)
+
     torch.cuda.empty_cache()
 
 
@@ -1276,8 +1367,8 @@ def vit_base_pretrained():
         model = freeze_layers(model)
     model.to(config.device)
     logger.info(f"Starting Training {config.name}")
-    # train(config, model)
-    test(config, model)
+    run(config, model)
+
     torch.cuda.empty_cache()
 
 
@@ -1290,8 +1381,8 @@ def vit_large_pretrained():
         model = freeze_layers(model)
     model.to(config.device)
     logger.info(f"Starting Training {config.name}")
-    # train(config, model)
-    test(config, model)
+    run(config, model)
+
     torch.cuda.empty_cache()
 
 
@@ -1304,8 +1395,8 @@ def vit_huge_pretrained():
         model = freeze_layers(model)
     model.to(config.device)
     logger.info(f"Starting Training {config.name}")
-    # train(config, model)
-    test(config, model)
+    run(config, model)
+
     torch.cuda.empty_cache()
 
 
@@ -1321,8 +1412,8 @@ def vit_base_aug():
         model = freeze_layers(model)
     model.to(config.device)
     logger.info(f"Starting Training {config.name}")
-    # train(config, model)
-    test(config, model)
+    run(config, model)
+
     torch.cuda.empty_cache()
 
 
@@ -1335,8 +1426,8 @@ def vit_large_aug():
         model = freeze_layers(model)
     model.to(config.device)
     logger.info(f"Starting Training {config.name}")
-    # train(config, model)
-    test(config, model)
+    run(config, model)
+
     torch.cuda.empty_cache()
 
 
@@ -1349,8 +1440,8 @@ def vit_huge_aug():
         model = freeze_layers(model)
     model.to(config.device)
     logger.info(f"Starting Training {config.name}")
-    # train(config, model)
-    test(config, model)
+    run(config, model)
+
     torch.cuda.empty_cache()
 
 
@@ -1366,8 +1457,8 @@ def vit_base():
         model = freeze_layers(model)
     model.to(config.device)
     logger.info(f"Starting Training {config.name}")
-    # train(config, model)
-    test(config, model)
+    run(config, model)
+
     torch.cuda.empty_cache()
 
 
@@ -1380,8 +1471,8 @@ def vit_large():
         model = freeze_layers(model)
     model.to(config.device)
     logger.info(f"Starting Training {config.name}")
-    # train(config, model)
-    test(config, model)
+    run(config, model)
+
     torch.cuda.empty_cache()
 
 
@@ -1394,8 +1485,8 @@ def vit_huge():
         model = freeze_layers(model)
     model.to(config.device)
     logger.info(f"Starting Training {config.name}")
-    # train(config, model)
-    test(config, model)
+    run(config, model)
+
     torch.cuda.empty_cache()
 
 
@@ -1412,8 +1503,8 @@ def resnet_152():
     model.fc = nn.Linear(2048, config.num_classes)
     model.to(config.device)
     logger.info(f"Starting Training {config.name}")
-    # train(config, model)
-    test(config, model)
+    run(config, model)
+
     torch.cuda.empty_cache()
 
 
@@ -1427,8 +1518,8 @@ def resnet_152_aug():
     model.fc = nn.Linear(2048, config.num_classes)
     model.to(config.device)
     logger.info(f"Starting Training {config.name}")
-    # train(config, model)
-    test(config, model)
+    run(config, model)
+
     torch.cuda.empty_cache()
 
 
@@ -1442,8 +1533,8 @@ def resnet_152_aug_pretrained():
     model.fc = nn.Linear(2048, config.num_classes)
     model.to(config.device)
     logger.info(f"Starting Training {config.name}")
-    # train(config, model)
-    test(config, model)
+    run(config, model)
+
     torch.cuda.empty_cache()
 
 
@@ -1457,8 +1548,8 @@ def resnet_152_pretrained():
     model.fc = nn.Linear(2048, config.num_classes)
     model.to(config.device)
     logger.info(f"Starting Training {config.name}")
-    # train(config, model)
-    test(config, model)
+    run(config, model)
+
     torch.cuda.empty_cache()
 
 
@@ -1475,23 +1566,23 @@ def resnet_50():
     model.fc = nn.Linear(2048, config.num_classes)
     model.to(config.device)
     logger.info(f"Starting Training {config.name}")
-    # train(config, model)
-    test(config, model)
+    run(config, model)
+
     torch.cuda.empty_cache()
 
 
 def resnet_50_aug():
     config = Resnet50Aug()
     config.device = device
-    model = models.resnet50()(pretrained=config.pretrained)
+    model = models.resnet50(pretrained=config.pretrained)
     if config.pretrained == True:
         for param in model.parameters():
             param.requires_grad = False
     model.fc = nn.Linear(2048, config.num_classes)
     model.to(config.device)
     logger.info(f"Starting Training {config.name}")
-    # train(config, model)
-    test(config, model)
+    run(config, model)
+
     torch.cuda.empty_cache()
 
 
@@ -1505,8 +1596,8 @@ def resnet_50_aug_pretrained():
     model.fc = nn.Linear(2048, config.num_classes)
     model.to(config.device)
     logger.info(f"Starting Training {config.name}")
-    # train(config, model)
-    test(config, model)
+    run(config, model)
+
     torch.cuda.empty_cache()
 
 
@@ -1520,8 +1611,8 @@ def resnet_50_pretrained():
     model.fc = nn.Linear(2048, config.num_classes)
     model.to(config.device)
     logger.info(f"Starting Training {config.name}")
-    # train(config, model)
-    test(config, model)
+    run(config, model)
+
     torch.cuda.empty_cache()
 
 
