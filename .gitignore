@@ -154,3 +154,10 @@ data/
 .vscode/
 scratchpad/
 login_server
+*.zip
+*.tar.gz
+*.tar
+*.gz
+PlotNeuralNet/
+*.pdf
+*.spl

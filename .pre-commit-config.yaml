@@ -3,12 +3,16 @@ repos:
     rev: v4.0.1
     hooks:
       - id: trailing-whitespace
+        exclude: ^journal/
       - id: end-of-file-fixer
+        exclude: ^journal/
       - id: check-yaml
       - id: check-toml
       - id: detect-private-key
       - id: check-added-large-files
+        exclude: ^journal/
         args: ["--maxkb=1000"]
+
   # - repo: https://gitlab.com/pycqa/flake8
   #   rev: 3.9.2
   #   hooks:

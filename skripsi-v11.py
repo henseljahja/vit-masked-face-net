@@ -1,3 +1,4 @@
+# %%
 import copy
 import logging
 import math
@@ -44,12 +45,12 @@ class Base(object):
 @dataclass
 class DataloaderBaseConfig(Base):
     seed: int = 42
-    batch_size: int = 16
+    batch_size: int = 8
     num_workers: int = 4
     pin_memory: bool = True
-    data_dir: str = "/home/hensel/data"
-    weights_dir: str = "/home/hensel/weights"
-    results_dir: str = "/home/hensel/v2/results"
+    data_dir: str = "./data"
+    weights_dir: str = "./weights"
+    results_dir: str = "./v2"
     models_dir: str = field(init=False)
     train_dir: str = field(init=False)
     test_dir: str = field(init=False)
@@ -60,14 +61,14 @@ class DataloaderBaseConfig(Base):
     cm_acc_plots_dir: str = field(init=False)
     accuracy_plots_dir: str = field(init=False)
     loss_plots_dir: str = field(init=False)
-    train = False
+    train = True
     test = True
-    eval = False
+    eval = True
     transforms: Any = transforms.ToTensor()
 
     def __post_init__(self):
         super().__post_init__()
-        self.models_dir: str = "/home/hensel/results/models"
+        self.models_dir: str = pjoin(self.results_dir, "models")
         self.train_dir: str = pjoin(self.results_dir, "csv/train")
         self.test_dir: str = pjoin(self.results_dir, "csv/test")
         self.cm_csv_dir: str = pjoin(self.results_dir, "csv/confusion_matrix")
@@ -107,9 +108,9 @@ class DataloaderAug(DataloaderBaseConfig):
 
     def __post_init__(self):
         super().__post_init__()
-        self.train_dir = pjoin(self.data_dir, "mfn_224_augment_split_mini/train")
-        self.val_dir = pjoin(self.data_dir, "mfn_224_augment_split_mini/val")
-        self.test_dir = pjoin(self.data_dir, "mfn_224_augment_split_mini/test")
+        self.train_dir = pjoin(self.data_dir, "train")
+        self.val_dir = pjoin(self.data_dir, "val")
+        self.test_dir = pjoin(self.data_dir, "test")
 
 
 @dataclass
@@ -127,9 +128,9 @@ class DataloaderNonAug(DataloaderBaseConfig):
 
     def __post_init__(self):
         super().__post_init__()
-        self.train_dir = pjoin(self.data_dir, "mfn_224_split_mini/train")
-        self.val_dir = pjoin(self.data_dir, "mfn_224_split_mini/val")
-        self.test_dir = pjoin(self.data_dir, "mfn_224_split_mini/test")
+        self.train_dir = pjoin(self.data_dir, "train")
+        self.val_dir = pjoin(self.data_dir, "val")
+        self.test_dir = pjoin(self.data_dir, "test")
 
 
 @dataclass
@@ -148,7 +149,7 @@ class VitBaseConfig(Base):
     max_grad_norm: float = 1.0
     seed: int = 42
     gradient_accumulation_steps: int = 1
-    num_epochs: int = 20
+    num_epochs: int = 2
     early_stop_threshold: int = 0.001
     early_stop_patience: int = 3
 
@@ -1619,41 +1620,43 @@ def resnet_50_pretrained():
 #%%
 if __name__ == "__main__":
     """Base Model"""
-    vit_base_pretrained()
-    vit_base()
+    # vit_base_pretrained()
+    # vit_base()
 
-    """ Base Aug Model """
+    # """ Base Aug Model """
     vit_base_aug_pretrained()
-    vit_base_aug()
+    # vit_base_aug()
 
-    """ Large Model """
-    vit_large_pretrained()
-    vit_large()
+    # """ Large Model """
+    # vit_large_pretrained()
+    # vit_large()
 
-    """ Large Aug Model """
-    vit_large_aug_pretrained()
-    vit_large_aug()
+    # """ Large Aug Model """
+    # vit_large_aug_pretrained()
+    # vit_large_aug()
 
-    """ Huge Model """
-    vit_huge_pretrained()
-    vit_huge()
+    # """ Huge Model """
+    # vit_huge_pretrained()
+    # vit_huge()
 
-    """ Huge Aug Model """
-    vit_huge_aug_pretrained()
-    vit_huge_aug()
+    # """ Huge Aug Model """
+    # vit_huge_aug_pretrained()
+    # vit_huge_aug()
 
-    """Resnet 152"""
-    resnet_152_pretrained()
-    resnet_152()
+    # """Resnet 152"""
+    # resnet_152_pretrained()
+    # resnet_152()
 
-    resnet_152_aug_pretrained()
-    resnet_152_aug()
+    # resnet_152_aug_pretrained()
+    # resnet_152_aug()
 
-    """Resnet 50"""
-    resnet_50_pretrained()
-    resnet_50()
+    # """Resnet 50"""
+    # resnet_50_pretrained()
+    # resnet_50()
 
-    resnet_50_aug_pretrained()
-    resnet_50_aug()
+    # resnet_50_aug_pretrained()
+    # resnet_50_aug()
 
     logger.info("Training Finished")
+
+# %%
