@@ -94,31 +94,38 @@
 
   \begin{abstract}
     %%%
-    Please Type your abstract here. Type your abstract here. Type your abstract
-    here. Type your abstract here. Type your abstract here. Type your
-    abstract here. Type your abstract here. Type your abstract here. Type
-    your abstract here. Type your abstract here. Type your abstract here.
-    Type your abstract here. Type your abstract here.Type your abstract here.
-    Type your abstract here. Type your abstract here. Type your abstract here.
-    Type your abstract here. Type your abstract here. Type your abstract here.
-
-    Please Type your abstract here. Type your abstract here. Type your abstract
-    Please Type your abstract here. Type your abstract here. Type your abstract
-    here. Type your abstract here. Type your abstract here. Type your
-    abstract here. Type your abstract here. Type your abstract here. Type
-    your abstract here. Type your abstract here. Type your abstract here.
-    Type your abstract here. Type your abstract here.
-    Please Type your abstract here. Type your abstract here.
-    Type your abstract here.
+    The Covid-19 pandemic has disrupted various levels of society, the use of masks
+    is important in preventing the spread of Covid-19. Only 23.1% of people use masks
+    correctly, artificial neural networks can help classify the use of masks that are
+    good, so that they can help slow the spread of the Covid-19 virus. It takes a large
+    dataset to create an artificial neural network that can classify the use of masks
+    properly. MaskedFace-Net is the right dataset, which consists of 137,016 digital
+    images with 4 class labels, namely Mask, Mask Chin, Mask Mouth Chin, and Mask
+    Nose Mouth. Mask classification training using Vision Transformers architecture
+    with transfer learning method using pretrained weights on ImageNet-21k, with
+    RandAugment augmentation. The model training process uses 20 epochs, an SGD
+    optimizer with a learning rate of 0.03, a batch size of 64, a GeLU activation
+    function, and a Cross Entropy loss function to compare the 3 architectures of Vision
+    transformers, namely Base-16, Large-16, and Huge-14. the use of augmentation
+    and without augmentation, and comparison of transfer learning methods and
+    without transfer learning. The results of this study found that the best classification
+    fell to Vision Transformer Huge 14, with transfer learning and augmentation
+    methods on the MaskedFace-Net dataset, namely the classification of the use of
+    masks with an accuracy of 0.960068 on training data, 0.941176 on validation data,
+    and 0.953383 on test data. Through this research, it can be concluded that the
+    use of data augmentation and transfer learning methods can classify the use of
+    masks properly.
     %%%%
   \end{abstract}
-
   \begin{keyword}
     %% MSC codes here, in the form: \MSC code \sep code
     %% or \MSC[2008] code \sep code (2000 is the default)
-    \MSC 41A05\sep 41A10\sep 65D05\sep 65D17
+    % \MSC Mach\sep 41A10\sep 65D05\sep 65D17
     %% Keywords
-    \KWD Keyword1\sep Keyword2\sep Keyword3
+    \KWD Mask Classification
+    \sep Vision Transformers
+    \sep Transfer Learning
+    \sep Data Augmentation
   \end{keyword}
 
 \end{frontmatter}
