@@ -242,8 +242,7 @@ INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/txfonts/txsyc.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/txfonts/txexa.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/txfonts/txexa.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/txfonts/txexa.tfm
-INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/latex-fonts/lasy8.tfm
-INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/latex-fonts/lasy6.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/latex-fonts/lasy10.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/txfonts/txr.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/txfonts/txr.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/txfonts/txmi.tfm
@@ -264,7 +263,8 @@ INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/txfonts/txsyc.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/txfonts/txsyc.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/txfonts/txexa.tfm
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/txfonts/txexa.tfm
-INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/latex-fonts/lasy10.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/latex-fonts/lasy8.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/latex-fonts/lasy6.tfm
 INPUT /usr/share/texlive/texmf-dist/tex/generic/stringenc/se-ascii-print.def
 INPUT /usr/share/texlive/texmf-dist/tex/generic/stringenc/se-ascii-print.def
 INPUT /usr/share/texlive/texmf-dist/tex/generic/stringenc/se-ascii-print.def

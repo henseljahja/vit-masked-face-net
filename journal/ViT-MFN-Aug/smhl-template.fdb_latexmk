@@ -1,19 +1,20 @@
 # Fdb version 3
-["bibtex smhl-template"] 1639764730 "smhl-template.aux" "smhl-template.bbl" "smhl-template" 1639764874
+["bibtex smhl-template"] 1639765202 "smhl-template.aux" "smhl-template.bbl" "smhl-template" 1639765203
   "./model5-names.bst" 1554382727 32241 fae611c68a6c57676804c7c668674116 ""
   "refs.bib" 1554382727 8577 77618239e6500379d251f70d01afc657 ""
-  "smhl-template.aux" 1639764873 2659 a73242640fbd6ad5730d40998e17ac69 "xelatex"
+  "smhl-template.aux" 1639765203 2565 313e13ac2a6b87cc0cdef67ce6183018 "xelatex"
   (generated)
-  "smhl-template.bbl"
   "smhl-template.blg"
-["xdvipdfmx"] 1639764874 "/home/hensel/projects/vit-masked-face-net/journal/ViT-MFN-Aug/smhl-template.xdv" "/home/hensel/projects/vit-masked-face-net/journal/ViT-MFN-Aug/smhl-template.pdf" "/home/hensel/projects/vit-masked-face-net/journal/ViT-MFN-Aug/smhl-template" 1639764874
-  "/home/hensel/projects/vit-masked-face-net/journal/ViT-MFN-Aug/smhl-template.xdv" 1639764874 119972 efadc641457861014c2c4c4a5e6eedae "xelatex"
+  "smhl-template.bbl"
+["xdvipdfmx"] 1639765203 "/home/hensel/projects/vit-masked-face-net/journal/ViT-MFN-Aug/smhl-template.xdv" "/home/hensel/projects/vit-masked-face-net/journal/ViT-MFN-Aug/smhl-template.pdf" "/home/hensel/projects/vit-masked-face-net/journal/ViT-MFN-Aug/smhl-template" 1639765203
+  "/home/hensel/projects/vit-masked-face-net/journal/ViT-MFN-Aug/smhl-template.xdv" 1639765203 118064 38a161b71f785489856d6d185e167215 "xelatex"
   (generated)
   "/home/hensel/projects/vit-masked-face-net/journal/ViT-MFN-Aug/smhl-template.pdf"
-["xelatex"] 1639764873 "/home/hensel/projects/vit-masked-face-net/journal/ViT-MFN-Aug/smhl-template.tex" "/home/hensel/projects/vit-masked-face-net/journal/ViT-MFN-Aug/smhl-template.xdv" "smhl-template" 1639764874
+["xelatex"] 1639765202 "/home/hensel/projects/vit-masked-face-net/journal/ViT-MFN-Aug/smhl-template.tex" "/home/hensel/projects/vit-masked-face-net/journal/ViT-MFN-Aug/smhl-template.xdv" "smhl-template" 1639765203
   "/etc/texmf/web2c/texmf.cnf" 1638737158 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/hensel/projects/vit-masked-face-net/journal/ViT-MFN-Aug/smhl-template.aux" 1639764873 2659 a73242640fbd6ad5730d40998e17ac69 ""
-  "/home/hensel/projects/vit-masked-face-net/journal/ViT-MFN-Aug/smhl-template.tex" 1639764872 15783 4c17a887560902a6d3249f88d522263b ""
+  "/home/hensel/projects/vit-masked-face-net/journal/ViT-MFN-Aug/TUcmtt.fd" 0 -1 0 ""
+  "/home/hensel/projects/vit-masked-face-net/journal/ViT-MFN-Aug/smhl-template.aux" 1639765203 2565 313e13ac2a6b87cc0cdef67ce6183018 ""
+  "/home/hensel/projects/vit-masked-face-net/journal/ViT-MFN-Aug/smhl-template.tex" 1639765201 15813 5e0bd752d8936836185b5c6899d0ca75 ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/adobe/zapfding/pzdr.tfm" 1136768653 1528 f853c4d1b4e0550255e02831fdc8496f ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam10.tfm" 1246382020 916 f87d7c45f9c908e672703b83b72241a3 ""
@@ -104,21 +105,22 @@
   "/usr/share/texlive/texmf-dist/web2c/texmf.cnf" 1581979058 38841 ce3692aa899bb693b90b87eaa5d4d84e ""
   "/usr/share/texmf/web2c/texmf.cnf" 1581979058 38841 ce3692aa899bb693b90b87eaa5d4d84e ""
   "/var/lib/texmf/web2c/xetex/xelatex.fmt" 1639566621 3335536 837c1cd2b37c57960ab1cc6343e863af ""
+  "TUcmtt.fd" 0 -1 0 ""
   "elsarticle.cls" 1554382727 33494 b1f7b240d1f3f3a890c0902cdecf01f5 ""
   "elsevier-logo.pdf" 1554382727 57218 1fa4b7cf0c56794aaa62629e8ff56a24 ""
   "smhl-logo.pdf" 1554382727 152881 68fae0fa664c7949eefc7ba3b7d921b5 ""
-  "smhl-template.aux" 1639764873 2659 a73242640fbd6ad5730d40998e17ac69 "xelatex"
-  "smhl-template.bbl" 1639764730 1740 075789021f7f36bc1185c315553971a1 "bibtex smhl-template"
-  "smhl-template.out" 1639764874 474 53c2e0972ab7aaa60a1b39176539ceb2 "xelatex"
-  "smhl-template.spl" 1639764874 40 db4273f1747fbfa72eecf6e053c19657 "xelatex"
-  "smhl-template.tex" 1639764872 15783 4c17a887560902a6d3249f88d522263b ""
+  "smhl-template.aux" 1639765203 2565 313e13ac2a6b87cc0cdef67ce6183018 "xelatex"
+  "smhl-template.bbl" 1639765202 1740 075789021f7f36bc1185c315553971a1 "bibtex smhl-template"
+  "smhl-template.out" 1639765203 474 53c2e0972ab7aaa60a1b39176539ceb2 "xelatex"
+  "smhl-template.spl" 1639765203 40 db4273f1747fbfa72eecf6e053c19657 "xelatex"
+  "smhl-template.tex" 1639765201 15813 5e0bd752d8936836185b5c6899d0ca75 ""
   "smhl.sty" 1554382760 20907 23e75d7b0fae44ed92f58ca4aecc0d0a ""
   "smhlfig01.pdf" 1554382727 20388 a77d729c12f7b353cd50c867c2272f4c ""
   (generated)
-  "/home/hensel/projects/vit-masked-face-net/journal/ViT-MFN-Aug/smhl-template.xdv"
-  "smhl-template.log"
   "smhl-template.out"
-  "smhl-template.aux"
-  "smhl-template.spl"
   "/home/hensel/projects/vit-masked-face-net/journal/ViT-MFN-Aug/smhl-template.log"
   "smhl-template.xdv"
+  "/home/hensel/projects/vit-masked-face-net/journal/ViT-MFN-Aug/smhl-template.xdv"
+  "smhl-template.spl"
+  "smhl-template.aux"
+  "smhl-template.log"
