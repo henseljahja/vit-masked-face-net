@@ -10,7 +10,7 @@ repos:
       - id: check-toml
       - id: detect-private-key
       - id: check-added-large-files
-        exclude: ^journal/
+        exclude: ^latex/
         args: ["--maxkb=1000"]
 
   # - repo: https://gitlab.com/pycqa/flake8
