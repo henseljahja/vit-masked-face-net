@@ -142,40 +142,8 @@ cython_debug/
 
 
 #Own Files
-testdir/
-!docs/
-references/
-.idea/
-*.npz
-torchvision_save/
-pytorch-image-models/
-outputs/
-data/
-.vscode/
-scratchpad/
-login_server
+scripts/login_server
+*.pt
 *.zip
 *.tar.gz
-*.tar
 *.gz
-PlotNeuralNet/
-*.pdf
-*.spl
-.weights/
-v2/
-v3/
-v4/
-template/
-script/
-results/
-randaugment/
-notebooks/
-journal/
-gradcam*
-weights/
-template/
-scripts/
-results/
-!latex/
-!latex/*.pdf
-randaugment_2/

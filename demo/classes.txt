@@ -1,0 +1,4 @@
+0, Mask
+1, Mask_Chin
+2, Mask_Mouth_Chin
+3, Mask_Nose_mouth
